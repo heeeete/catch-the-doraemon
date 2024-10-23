@@ -5,7 +5,7 @@ function App() {
 	const canvasRef = useRef(null);
 	const circleRef = useRef(null);
 	const intervalId = useRef(null);
-	const [scale, setScale] = useState(1);
+	const [scale, setScale] = useState(0.7);
 	const width = ~~(980 / 4);
 	const height = ~~(645 / 2) - 13;
 	const scaleWidth = useRef(width * scale);
@@ -46,9 +46,9 @@ function App() {
 			const ctx = canvas.getContext("2d");
 			const img = new Image();
 
-			let speed = 6;
-			let dir = { x: speed, y: speed };
-			let targetDir = { x: speed, y: speed };
+			let speed = 2.5;
+			let dir = { x: 0, y: 0 };
+			let targetDir = { x: 0, y: 0 };
 			let currLoopIdx = 0;
 			let frameSpeed = 0;
 			let animationFrameId;
@@ -61,7 +61,7 @@ function App() {
 				ctx.save();
 
 				if (dir.x < 0) {
-					ctx.scale(-1, 1); // x축 반전
+					ctx.scale(-1, 1);
 					ctx.translate(-canvasX - scaleWidth.current, canvasY);
 				} else ctx.translate(canvasX, canvasY);
 
@@ -79,6 +79,14 @@ function App() {
 				ctx.restore();
 			};
 
+			const normalize = () => {
+				const length = Math.sqrt(dir.x * dir.x + dir.y * dir.y);
+				if (length > 0) {
+					dir.x = (dir.x / length) * speed;
+					dir.y = (dir.y / length) * speed;
+				}
+			};
+
 			const gradualUpdatePos = (flag) => {
 				if (
 					Math.abs(dir.x - targetDir.x) < 0.01 &&
@@ -89,15 +97,17 @@ function App() {
 					return;
 				}
 
-				// Lerp 방식으로 방향을 점진적으로 변경
-				dir.x += (targetDir.x - dir.x) * (flag ? 1 : 0.05);
-				dir.y += (targetDir.y - dir.y) * (flag ? 1 : 0.05);
+				dir.x += (targetDir.x - dir.x) * (flag ? 1 : 0.1);
+				dir.y += (targetDir.y - dir.y) * (flag ? 1 : 0.1);
+				normalize();
+			};
 
-				const length = Math.sqrt(dir.x * dir.x + dir.y * dir.y);
-				if (length > 0) {
-					dir.x = (dir.x / length) * speed;
-					dir.y = (dir.y / length) * speed;
-				}
+			const reverseTargetDir = (target) => {
+				if (target === "x")
+					targetDir.x = Math.abs(targetDir.x) * (pos.current.x <= 0 ? 1 : -1);
+				else
+					targetDir.y = Math.abs(targetDir.y) * (pos.current.y <= 0 ? 1 : -1);
+				return 1;
 			};
 
 			const updatePos = () => {
@@ -105,21 +115,18 @@ function App() {
 				if (
 					pos.current.x <= 0 ||
 					pos.current.x + scaleWidth.current >= canvas.width
-				) {
-					flag = 1;
-					targetDir.x = Math.abs(targetDir.x) * (pos.current.x <= 0 ? 1 : -1);
-				}
+				)
+					flag = reverseTargetDir("x");
 				if (
 					pos.current.y <= 0 ||
 					pos.current.y + scaleHeight.current >= canvas.height
-				) {
-					flag = 1;
-					targetDir.y = Math.abs(targetDir.y) * (pos.current.y <= 0 ? 1 : -1);
-				}
+				)
+					flag = reverseTargetDir("y");
+
 				gradualUpdatePos(flag);
 
-				pos.current.x = pos.current.x + dir.x;
-				pos.current.y = pos.current.y + dir.y;
+				pos.current.x += dir.x * speed;
+				pos.current.y += dir.y * speed;
 			};
 
 			const step = () => {
@@ -153,17 +160,8 @@ function App() {
 
 			const init = () => {
 				intervalId.current = setInterval(() => {
-					const directionToggle = Math.random() < 0.5 ? 0 : 1;
-
-					if (directionToggle === 0) {
-						const possibleSpeeds = [-speed, speed];
-						targetDir.x = possibleSpeeds[Math.floor(Math.random() * 2)];
-						targetDir.y = Math.random() * (speed * 2) - speed;
-					} else {
-						const possibleSpeeds = [-speed, speed];
-						targetDir.y = possibleSpeeds[Math.floor(Math.random() * 2)];
-						targetDir.x = Math.random() * (speed * 2) - speed;
-					}
+					const angle = Math.random() * Math.PI * 2; // 랜덤한 각도
+					targetDir = { x: Math.cos(angle), y: Math.sin(angle) }; // 새로운 방향 설정
 				}, 500);
 
 				window.addEventListener("click", shoot);
@@ -179,50 +177,50 @@ function App() {
 		[canvasRef]
 	);
 
-	useEffect(
-		function initMouseEvent() {
-			let offsetX = 0;
-			let offsetY = 0;
-			const $col = document.querySelector(".col");
-			const $row = document.querySelector(".row");
+	// useEffect(
+	// 	function initMouseEvent() {
+	// 		let offsetX = 0;
+	// 		let offsetY = 0;
+	// 		const $col = document.querySelector(".col");
+	// 		const $row = document.querySelector(".row");
 
-			if (circleRef.current) {
-				const rect = circleRef.current.getBoundingClientRect();
-				offsetX = rect.width / 2;
-				offsetY = rect.height / 2;
-			}
+	// 		if (circleRef.current) {
+	// 			const rect = circleRef.current.getBoundingClientRect();
+	// 			offsetX = rect.width / 2;
+	// 			offsetY = rect.height / 2;
+	// 		}
 
-			const followMouse = (e) => {
-				if (isCursorOverTarget(e)) {
-					$col.classList.add("active");
-					$row.classList.add("active");
-				} else {
-					$col.classList.remove("active");
-					$row.classList.remove("active");
-				}
+	// 		const followMouse = (e) => {
+	// 			if (isCursorOverTarget(e)) {
+	// 				$col.classList.add("active");
+	// 				$row.classList.add("active");
+	// 			} else {
+	// 				$col.classList.remove("active");
+	// 				$row.classList.remove("active");
+	// 			}
 
-				if (circleRef.current) {
-					circleRef.current.style.transform = `translate(${e.x - offsetX}px, ${
-						e.y - offsetY
-					}px)`;
-				}
-			};
+	// 			if (circleRef.current) {
+	// 				circleRef.current.style.transform = `translate(${e.x - offsetX}px, ${
+	// 					e.y - offsetY
+	// 				}px)`;
+	// 			}
+	// 		};
 
-			window.addEventListener("mousemove", followMouse);
-			return () => {
-				window.removeEventListener("mousemove", followMouse);
-			};
-		},
-		[scale]
-	);
+	// 		window.addEventListener("mousemove", followMouse);
+	// 		return () => {
+	// 			window.removeEventListener("mousemove", followMouse);
+	// 		};
+	// 	},
+	// 	[scale]
+	// );
 
 	return (
 		<>
-			<div className="circle" ref={circleRef}>
+			{/* <div className="circle" ref={circleRef}>
 				<div className="light" id="light"></div>
 				<div className="col"></div>
 				<div className="row"></div>
-			</div>
+			</div> */}
 			<canvas ref={canvasRef}></canvas>
 		</>
 	);
