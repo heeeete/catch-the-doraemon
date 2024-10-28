@@ -2,29 +2,67 @@ import { useEffect, useRef, useState } from "react";
 import "./App.css";
 
 function App() {
+	const FRAME_DIMENSIONS = {
+		width: Math.floor(980 / 4),
+		height: Math.floor(645 / 2) - 13,
+	};
+	const SCALE_LEVELS = [0.7, 0.4, 0.2];
+	const SPEED_LEVELS = [2.5, 7, 10];
+	const INTERVAL_TIMES = [1500, 1000, 500];
+	const LERP_TIMES = [0.01, 0.03, 0.05];
+
+	const [isCursorOver, setIsCursorOver] = useState(false);
+	const [isClear, setIsClear] = useState(false);
+	const [recalculation, setRecalculation] = useState(false);
+
+	const level = useRef(0);
 	const canvasRef = useRef(null);
 	const circleRef = useRef(null);
-	const [isComeIn, setIsComeIn] = useState(false);
-	const scale = [0.7, 0.4, 0.2];
-	const [recalculation, setRecalculation] = useState(false);
-	const width = ~~(980 / 4);
-	const height = ~~(645 / 2) - 13;
-	const level = useRef(0);
-	const scaleWidth = useRef(width * scale[level.current]);
-	const scaleHeight = useRef(height * scale[level.current]);
-	const pos = useRef({ x: 0, y: 0 });
+	const doraemonImageRef = useRef(new Image());
+	const bulletImageRef = useRef(new Image());
+	const scaleWidth = useRef(FRAME_DIMENSIONS.width * SCALE_LEVELS[level.current]);
+	const scaleHeight = useRef(FRAME_DIMENSIONS.height * SCALE_LEVELS[level.current]);
+	const dirRef = useRef({ x: 0, y: 0 });
+	const posRef = useRef({ x: 0, y: 0 });
+	const targetDirRef = { x: 0, y: 0 };
+
 	const isCursorOverTarget = (e) =>
-		e.clientX >= pos.current.x &&
-		e.clientX <= pos.current.x + scaleWidth.current &&
-		e.clientY >= pos.current.y &&
-		e.clientY <= pos.current.y + scaleHeight.current;
+		e.clientX >= posRef.current.x &&
+		e.clientX <= posRef.current.x + scaleWidth.current &&
+		e.clientY >= posRef.current.y &&
+		e.clientY <= posRef.current.y + scaleHeight.current;
+
+	const normalizeDir = () => {
+		const length = Math.hypot(dirRef.current.x, dirRef.current.y);
+		if (length > 0) {
+			dirRef.current.x /= length;
+			dirRef.current.y /= length;
+		}
+	};
+
+	const updateDirection = (immediate = false) => {
+		const lerpTime = immediate ? 1 : LERP_TIMES[level.current];
+
+		dirRef.current.x += (targetDirRef.current.x - dirRef.current.x) * lerpTime;
+		dirRef.current.y += (targetDirRef.current.y - dirRef.current.y) * lerpTime;
+		normalizeDir();
+	};
+
+	const reverseDirection = (target) => {
+		console.log(target);
+		if (target === "x") {
+			targetDirRef.current.x = -Math.abs(targetDirRef.current.x) * (posRef.current.x <= 0 ? -1 : 1);
+		} else {
+			targetDirRef.current.y = -Math.abs(targetDirRef.current.y) * (posRef.current.y <= 0 ? -1 : 1);
+		}
+	};
 
 	useEffect(() => {
-		scaleWidth.current = width * scale[level.current];
-		scaleHeight.current = height * scale[level.current];
+		scaleWidth.current = FRAME_DIMENSIONS.width * SCALE_LEVELS[level.current];
+		scaleHeight.current = FRAME_DIMENSIONS.height * SCALE_LEVELS[level.current];
 	}, [recalculation]);
 
-	useEffect(function initScreenSize() {
+	useEffect(() => {
 		const resizeWindow = () => {
 			if (canvasRef.current) {
 				canvasRef.current.width = document.body.clientWidth;
@@ -39,52 +77,97 @@ function App() {
 		};
 	}, []);
 
-	useEffect(function drawCanvas() {
+	useEffect(() => {
+		const CYCLE_LOOP_X = [0, 1, 2, 3, 0, 1];
+		const CYCLE_LOOP_Y = [0, 0, 0, 0, 1, 1];
 		const canvas = canvasRef.current;
-
-		const doraemong = new Image();
-		const bullet = new Image();
-		let imagesLoaded = 0;
-		const checkAllImagesLoaded = () => {
-			imagesLoaded++;
-			if (imagesLoaded === 2) {
-				init();
-			}
-		};
-		doraemong.src = "/doraemong.png";
-		bullet.src = "/bullet.png";
-		doraemong.onload = checkAllImagesLoaded;
-		bullet.onload = checkAllImagesLoaded;
-
-		const cycleLoopX = [0, 1, 2, 3, 0, 1];
-		const cycleLoopY = [0, 0, 0, 0, 1, 1];
-		const speed = [2.5, 7, 10];
-		const intervalTime = [1500, 1000, 500];
-		const lerpTime = [0.01, 0.03, 0.05];
 		const ctx = canvas.getContext("2d");
 
 		let bulletMarks = [];
-		let dir = { x: 0, y: 0 };
-		let targetDir = { x: 0, y: 0 };
 		let currLoopIdx = 0;
 		let frameSpeed = 0;
 		let animationFrameId;
 		let intervalId;
 
-		const drawFrame = (frameX, frameY, canvasX, canvasY) => {
+		const loadImages = () => {
+			let imagesLoaded = 0;
+			const onImageLoad = () => {
+				imagesLoaded++;
+				if (imagesLoaded === 2) initAnimation();
+			};
+
+			doraemonImageRef.current.src = "/doraemong.png";
+			bulletImageRef.current.src = "/bullet.png";
+			doraemonImageRef.current.onload = onImageLoad;
+			bulletImageRef.current.onload = onImageLoad;
+		};
+
+		const initAnimation = () => {
+			posRef.current.x = Math.random() * (document.body.clientWidth - scaleWidth.current);
+			posRef.current.y = Math.random() * (document.body.clientHeight - scaleHeight.current);
+			console.log(posRef.current);
+
+			const updateTargetDirection = () => {
+				const angle = Math.random() * Math.PI * 2;
+				targetDirRef.current = { x: Math.cos(angle), y: Math.sin(angle) };
+			};
+
+			const setDirectionInterval = () => {
+				intervalId = setInterval(updateTargetDirection, INTERVAL_TIMES[level.current]);
+			};
+
+			const drawCanvas = () => {
+				frameSpeed++;
+				if (frameSpeed > 10) {
+					currLoopIdx++;
+					if (currLoopIdx >= CYCLE_LOOP_X.length) currLoopIdx = 0;
+					frameSpeed = 0;
+				}
+				if (
+					posRef.current.x <= 0 ||
+					posRef.current.x + scaleWidth.current >= canvas.width ||
+					posRef.current.y <= 0 ||
+					posRef.current.y + scaleHeight.current >= canvas.height
+				) {
+					reverseDirection(
+						posRef.current.x <= 0 || posRef.current.x + scaleWidth.current >= canvas.width
+							? "x"
+							: "y"
+					);
+					updateDirection(true);
+				} else {
+					updateDirection();
+				}
+
+				posRef.current.x += dirRef.current.x * SPEED_LEVELS[level.current];
+				posRef.current.y += dirRef.current.y * SPEED_LEVELS[level.current];
+
+				ctx.clearRect(0, 0, document.body.clientWidth, document.body.clientHeight);
+				drawBulletMarks();
+				drawFrame(posRef.current.x, posRef.current.y);
+
+				animationFrameId = requestAnimationFrame(drawCanvas);
+			};
+			updateTargetDirection();
+			setDirectionInterval();
+			window.addEventListener("click", handleShoot);
+			drawCanvas();
+		};
+
+		const drawFrame = (canvasX, canvasY) => {
 			ctx.save();
 
-			if (dir.x < 0) {
+			if (dirRef.current.x < 0) {
 				ctx.scale(-1, 1);
 				ctx.translate(-canvasX - scaleWidth.current, canvasY);
 			} else ctx.translate(canvasX, canvasY);
 
 			ctx.drawImage(
-				doraemong,
-				frameX * width,
-				frameY * height,
-				width,
-				height,
+				doraemonImageRef.current,
+				CYCLE_LOOP_X[currLoopIdx] * FRAME_DIMENSIONS.width,
+				CYCLE_LOOP_Y[currLoopIdx] * FRAME_DIMENSIONS.height,
+				FRAME_DIMENSIONS.width,
+				FRAME_DIMENSIONS.height,
 				0,
 				0,
 				scaleWidth.current,
@@ -93,7 +176,6 @@ function App() {
 			ctx.restore();
 		};
 
-		/* 총알 그리기 */
 		const drawBulletMarks = () => {
 			const now = new Date().getTime();
 
@@ -110,85 +192,25 @@ function App() {
 						const fadeElapsed = elapsed - visibleDuration;
 						alpha = 1 - fadeElapsed / fadeDuration;
 					}
+					ctx.save();
 					ctx.globalAlpha = alpha;
-					ctx.drawImage(bullet, 0, 0, 50, 50, mark.x - 25, mark.y - 25, 50, 50);
+					ctx.translate(mark.x, mark.y);
+					ctx.rotate(mark.rotate);
+					ctx.translate(-25, -25);
+					ctx.drawImage(bulletImageRef.current, 0, 0, 50, 50);
+					ctx.restore();
 					return true;
 				}
 				return false;
 			});
-
-			ctx.globalAlpha = 1;
 		};
 
-		const normalize = () => {
-			const length = Math.sqrt(dir.x * dir.x + dir.y * dir.y);
-			if (length > 0) {
-				dir.x = dir.x / length;
-				dir.y = dir.y / length;
-			}
-		};
-
-		const gradualUpdatePos = (flag) => {
-			dir.x += (targetDir.x - dir.x) * (flag ? 1 : lerpTime[level.current]);
-			dir.y += (targetDir.y - dir.y) * (flag ? 1 : lerpTime[level.current]);
-			normalize();
-		};
-
-		const reverseTargetDir = (target) => {
-			if (target === "x")
-				targetDir.x = Math.abs(targetDir.x) * (pos.current.x <= 0 ? 1 : -1);
-			else targetDir.y = Math.abs(targetDir.y) * (pos.current.y <= 0 ? 1 : -1);
-			return 1;
-		};
-
-		const updatePos = () => {
-			let flag = 0;
-			if (
-				pos.current.x <= 0 ||
-				pos.current.x + scaleWidth.current >= canvas.width
-			)
-				flag = reverseTargetDir("x");
-			if (
-				pos.current.y <= 0 ||
-				pos.current.y + scaleHeight.current >= canvas.height
-			)
-				flag = reverseTargetDir("y");
-
-			gradualUpdatePos(flag);
-
-			pos.current.x += dir.x * speed[level.current];
-			pos.current.y += dir.y * speed[level.current];
-		};
-
-		const step = () => {
-			frameSpeed++;
-			if (frameSpeed > 10) {
-				currLoopIdx++;
-				if (currLoopIdx >= cycleLoopX.length) currLoopIdx = 0;
-				frameSpeed = 0;
-			}
-			updatePos();
-			ctx.clearRect(
-				0,
-				0,
-				document.body.clientWidth,
-				document.body.clientHeight
-			);
-			drawBulletMarks();
-			drawFrame(
-				cycleLoopX[currLoopIdx],
-				cycleLoopY[currLoopIdx],
-				pos.current.x,
-				pos.current.y
-			);
-			animationFrameId = requestAnimationFrame(step);
-		};
-
-		const shoot = (e) => {
+		const handleShoot = (e) => {
 			if (isCursorOverTarget(e)) {
 				if (level.current <= 1) {
 					level.current += 1;
 					setRecalculation((prev) => !prev);
+				} else {
 				}
 			} else
 				bulletMarks.push({
@@ -196,78 +218,48 @@ function App() {
 					y: e.clientY,
 					t: new Date().getTime(),
 					alpha: 1,
+					rotate: Math.random() * 2 * Math.PI,
 				});
 		};
 
-		const init = () => {
-			pos.current.x =
-				Math.random() * (document.body.clientWidth - scaleWidth.current);
-			pos.current.y =
-				Math.random() * (document.body.clientHeight - scaleHeight.current);
-
-			const makeSingleVector = () => {
-				const angle = Math.random() * Math.PI * 2;
-				targetDir = { x: Math.cos(angle), y: Math.sin(angle) };
-			};
-
-			const customInterval = () => {
-				if (intervalId) clearTimeout(intervalId);
-
-				intervalId = setTimeout(() => {
-					makeSingleVector();
-					customInterval();
-				}, intervalTime[level.current]);
-			};
-
-			customInterval();
-			makeSingleVector();
-			window.addEventListener("click", shoot);
-			step();
-		};
+		loadImages();
 
 		return () => {
-			window.removeEventListener("click", shoot);
+			window.removeEventListener("click", handleShoot);
 			if (intervalId) clearTimeout(intervalId);
 			if (animationFrameId) cancelAnimationFrame(animationFrameId);
 		};
 	}, []);
 
-	useEffect(
-		function initMouseEvent() {
-			let offsetX = 0;
-			let offsetY = 0;
+	useEffect(() => {
+		let offsetX = 0;
+		let offsetY = 0;
 
+		if (circleRef.current) {
+			const rect = circleRef.current.getBoundingClientRect();
+			offsetX = rect.width / 2;
+			offsetY = rect.height / 2;
+		}
+
+		const followMouse = (e) => {
+			setIsCursorOver(isCursorOverTarget(e));
 			if (circleRef.current) {
-				const rect = circleRef.current.getBoundingClientRect();
-				offsetX = rect.width / 2;
-				offsetY = rect.height / 2;
+				circleRef.current.style.transform = `translate(${e.x - offsetX}px, ${e.y - offsetY}px)`;
 			}
+		};
 
-			const followMouse = (e) => {
-				if (isCursorOverTarget(e)) setIsComeIn(true);
-				else setIsComeIn(false);
-
-				if (circleRef.current) {
-					circleRef.current.style.transform = `translate(${e.x - offsetX}px, ${
-						e.y - offsetY
-					}px)`;
-				}
-			};
-
-			window.addEventListener("mousemove", followMouse);
-			return () => {
-				window.removeEventListener("mousemove", followMouse);
-			};
-		},
-		[recalculation]
-	);
+		window.addEventListener("mousemove", followMouse);
+		return () => {
+			window.removeEventListener("mousemove", followMouse);
+		};
+	}, [recalculation]);
 
 	return (
 		<>
 			<div className="circle" ref={circleRef}>
 				<div className="light" id="light"></div>
-				<div className={`col ${isComeIn ? "active" : ""}`}></div>
-				<div className={`row ${isComeIn ? "active" : ""}`}></div>
+				<div className={`col ${isCursorOver ? "active" : ""}`}></div>
+				<div className={`row ${isCursorOver ? "active" : ""}`}></div>
 			</div>
 			<canvas ref={canvasRef}></canvas>
 		</>
