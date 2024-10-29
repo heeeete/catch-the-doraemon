@@ -96,7 +96,7 @@ function App() {
 				if (imagesLoaded === 2) initAnimation();
 			};
 
-			doraemonImageRef.current.src = "/doraemong.png";
+			doraemonImageRef.current.src = "/doraemon.png";
 			bulletImageRef.current.src = "/bullet.png";
 			doraemonImageRef.current.onload = onImageLoad;
 			bulletImageRef.current.onload = onImageLoad;
