@@ -12,7 +12,6 @@ function App() {
 	const LERP_TIMES = [0.01, 0.03, 0.05];
 
 	const [isCursorOver, setIsCursorOver] = useState(false);
-	const [isClear, setIsClear] = useState(false);
 	const [recalculation, setRecalculation] = useState(false);
 
 	const level = useRef(0);
@@ -49,7 +48,6 @@ function App() {
 	};
 
 	const reverseDirection = (target) => {
-		console.log(target);
 		if (target === "x") {
 			targetDirRef.current.x = -Math.abs(targetDirRef.current.x) * (posRef.current.x <= 0 ? -1 : 1);
 		} else {
@@ -105,7 +103,6 @@ function App() {
 		const initAnimation = () => {
 			posRef.current.x = Math.random() * (document.body.clientWidth - scaleWidth.current);
 			posRef.current.y = Math.random() * (document.body.clientHeight - scaleHeight.current);
-			console.log(posRef.current);
 
 			const updateTargetDirection = () => {
 				const angle = Math.random() * Math.PI * 2;
