@@ -1,0 +1,42 @@
+/* hpBar.scss */
+
+.parent {
+	display: flex;
+	position: absolute;
+
+	width: 100vw;
+	height: 100vh;
+	justify-content: center;
+}
+
+.hp-bar {
+	position: relative;
+	width: 60vw;
+	appearance: none;
+	z-index: 100;
+	top: 10px;
+}
+
+.hp-bar::-webkit-progress-bar {
+	background-color: #e0e0e0;
+	border-radius: 5px;
+	border: 2px white solid;
+}
+
+.hp-bar::-moz-progress-bar {
+	background-color: #e0e0e0;
+	border-radius: 5px;
+	border: 2px white solid;
+}
+
+.hp-bar::-webkit-progress-value {
+	border-radius: 5px;
+	background-color: #4caf50;
+	transition: width 0.5s ease; /* 애니메이션 */
+}
+
+.hp-bar::-moz-progress-bar {
+	border-radius: 5px;
+	background-color: #4caf50;
+	transition: width 0.5s ease; /* 애니메이션 */
+}

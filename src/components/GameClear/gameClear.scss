@@ -1,0 +1,50 @@
+$game-clear-delay-interval: 0.1s;
+$bounce-distance: 15vw;
+
+.game-clear {
+	font-family: "Sixtyfour Convergence", serif;
+	font-weight: 900;
+
+	width: 100%;
+	height: 100%;
+	display: flex;
+	position: absolute;
+	justify-content: center;
+	align-items: center;
+	top: 0;
+	left: 0;
+
+	.text {
+		font-size: 5vw;
+		font-weight: 900;
+		transition: opacity 1s, transform 0.2s;
+		visibility: visible;
+		opacity: 1;
+
+		&.start {
+			animation: bounce-up 1s ease-in-out;
+		}
+
+		// 각 텍스트 애니메이션 지연 시간 설정
+		@for $i from 1 through 10 {
+			&:nth-child(#{$i}) {
+				animation-delay: $i * $game-clear-delay-interval;
+			}
+		}
+	}
+}
+
+@keyframes bounce-up {
+	0% {
+		transform: translateY(0);
+	}
+	45% {
+		transform: translateY(-$bounce-distance);
+	}
+	90% {
+		transform: translateY(1vw);
+	}
+	100% {
+		transform: translateY(0);
+	}
+}

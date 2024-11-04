@@ -1,26 +1,38 @@
 import { useEffect, useRef, useState } from "react";
-import "./App.css";
+import "./App.scss";
+import MiniMap from "./components/MiniMap/MiniMap";
+import GameClear from "./components/GameClear/GameClear";
+import HPBar from "./components/HPBar/HPBar";
 
 function App() {
 	const FRAME_DIMENSIONS = {
 		width: Math.floor(980 / 4),
 		height: Math.floor(645 / 2) - 13,
 	};
-	const SCALE_LEVELS = [0.7, 0.4, 0.2];
-	const SPEED_LEVELS = [2.5, 7, 10];
-	const INTERVAL_TIMES = [1500, 1000, 500];
-	const LERP_TIMES = [0.01, 0.03, 0.05];
+	const SPEED_LEVELS = [2.5, 7];
+	// const SPEED_LEVELS = [1, 1, 1];
+
+	const INTERVAL_TIMES = [1500, 700, 300];
+	const LERP_TIMES = [0.01, 0.05];
 
 	const [isCursorOver, setIsCursorOver] = useState(false);
 	const [recalculation, setRecalculation] = useState(false);
+	const [isEnd, setIsEnd] = useState(false);
+	const [level, setLevelUp] = useState(0);
+	const [intervalAnimation, setIntervalAnimation] = useState(false);
 
-	const level = useRef(0);
+	const levelRef = useRef(0);
+	const scaleRef = useRef(1);
+	const speedUpTextRef = useRef(null);
+	const miniMapCharSizeRef = useRef(17);
+	const isSuccessRef = useRef(false);
+	const hitCountRef = useRef(0);
 	const canvasRef = useRef(null);
 	const circleRef = useRef(null);
 	const doraemonImageRef = useRef(new Image());
 	const bulletImageRef = useRef(new Image());
-	const scaleWidth = useRef(FRAME_DIMENSIONS.width * SCALE_LEVELS[level.current]);
-	const scaleHeight = useRef(FRAME_DIMENSIONS.height * SCALE_LEVELS[level.current]);
+	const scaleWidth = useRef(FRAME_DIMENSIONS.width * scaleRef.current);
+	const scaleHeight = useRef(FRAME_DIMENSIONS.height * scaleRef.current);
 	const dirRef = useRef({ x: 0, y: 0 });
 	const posRef = useRef({ x: 0, y: 0 });
 	const targetDirRef = { x: 0, y: 0 };
@@ -39,14 +51,16 @@ function App() {
 		}
 	};
 
+	/* 도라에몽 방향 점진적 업데이트 */
 	const updateDirection = (immediate = false) => {
-		const lerpTime = immediate ? 1 : LERP_TIMES[level.current];
+		const lerpTime = immediate ? 1 : LERP_TIMES[levelRef.current];
 
 		dirRef.current.x += (targetDirRef.current.x - dirRef.current.x) * lerpTime;
 		dirRef.current.y += (targetDirRef.current.y - dirRef.current.y) * lerpTime;
 		normalizeDir();
 	};
 
+	/* 도라에몽 벽에 부딪히면 즉시 반대 방향으로 이동 */
 	const reverseDirection = (target) => {
 		if (target === "x") {
 			targetDirRef.current.x = -Math.abs(targetDirRef.current.x) * (posRef.current.x <= 0 ? -1 : 1);
@@ -55,9 +69,10 @@ function App() {
 		}
 	};
 
+	/* scaleRef 변경시 recalculation state를 변경해 크기 재계산*/
 	useEffect(() => {
-		scaleWidth.current = FRAME_DIMENSIONS.width * SCALE_LEVELS[level.current];
-		scaleHeight.current = FRAME_DIMENSIONS.height * SCALE_LEVELS[level.current];
+		scaleWidth.current = FRAME_DIMENSIONS.width * scaleRef.current;
+		scaleHeight.current = FRAME_DIMENSIONS.height * scaleRef.current;
 	}, [recalculation]);
 
 	useEffect(() => {
@@ -82,10 +97,12 @@ function App() {
 		const ctx = canvas.getContext("2d");
 
 		let bulletMarks = [];
+		let hitMarks = [];
 		let currLoopIdx = 0;
 		let frameSpeed = 0;
 		let animationFrameId;
-		let intervalId;
+		let hitEffectFrameId;
+		let timeoutId;
 
 		const loadImages = () => {
 			let imagesLoaded = 0;
@@ -110,45 +127,85 @@ function App() {
 			};
 
 			const setDirectionInterval = () => {
-				intervalId = setInterval(updateTargetDirection, INTERVAL_TIMES[level.current]);
+				const customInterval = () => {
+					clearTimeout(timeoutId);
+
+					timeoutId = setTimeout(() => {
+						updateTargetDirection();
+
+						if (!isSuccessRef.current) {
+							customInterval();
+						} else {
+							clearTimeout(timeoutId);
+						}
+					}, INTERVAL_TIMES[levelRef.current]);
+				};
+
+				customInterval();
 			};
 
 			const drawCanvas = () => {
-				frameSpeed++;
-				if (frameSpeed > 10) {
-					currLoopIdx++;
-					if (currLoopIdx >= CYCLE_LOOP_X.length) currLoopIdx = 0;
-					frameSpeed = 0;
-				}
-				if (
-					posRef.current.x <= 0 ||
-					posRef.current.x + scaleWidth.current >= canvas.width ||
-					posRef.current.y <= 0 ||
-					posRef.current.y + scaleHeight.current >= canvas.height
-				) {
-					reverseDirection(
-						posRef.current.x <= 0 || posRef.current.x + scaleWidth.current >= canvas.width
-							? "x"
-							: "y"
-					);
-					updateDirection(true);
+				if (!isSuccessRef.current) {
+					frameSpeed++;
+					if (frameSpeed > 10) {
+						currLoopIdx++;
+						if (currLoopIdx >= CYCLE_LOOP_X.length) currLoopIdx = 0;
+						frameSpeed = 0;
+					}
+					if (
+						posRef.current.x <= 0 ||
+						posRef.current.x + scaleWidth.current >= canvas.width ||
+						posRef.current.y <= 0 ||
+						posRef.current.y + scaleHeight.current >= canvas.height
+					) {
+						reverseDirection(
+							posRef.current.x <= 0 || posRef.current.x + scaleWidth.current >= canvas.width
+								? "x"
+								: "y"
+						);
+						updateDirection(true);
+					} else {
+						updateDirection();
+					}
+
+					posRef.current.x += dirRef.current.x * SPEED_LEVELS[levelRef.current];
+					posRef.current.y += dirRef.current.y * SPEED_LEVELS[levelRef.current];
+
+					ctx.clearRect(0, 0, document.body.clientWidth, document.body.clientHeight);
+					drawBulletMarks();
+					drawFrame(posRef.current.x, posRef.current.y);
+					drawHitMark();
+
+					animationFrameId = requestAnimationFrame(drawCanvas);
 				} else {
-					updateDirection();
+					gameClear(posRef.current.x, posRef.current.y);
 				}
-
-				posRef.current.x += dirRef.current.x * SPEED_LEVELS[level.current];
-				posRef.current.y += dirRef.current.y * SPEED_LEVELS[level.current];
-
-				ctx.clearRect(0, 0, document.body.clientWidth, document.body.clientHeight);
-				drawBulletMarks();
-				drawFrame(posRef.current.x, posRef.current.y);
-
-				animationFrameId = requestAnimationFrame(drawCanvas);
 			};
+
 			updateTargetDirection();
 			setDirectionInterval();
 			window.addEventListener("click", handleShoot);
 			drawCanvas();
+		};
+
+		const gameClear = (canvasX, canvasY) => {
+			const characterReductionAnimation = () => {
+				if (scaleRef.current > 0) {
+					ctx.clearRect(0, 0, canvas.width, canvas.height);
+					drawFrame(canvasX, canvasY);
+					scaleRef.current -= 0.005;
+					setRecalculation((prev) => !prev);
+					animationFrameId = requestAnimationFrame(characterReductionAnimation);
+				} else {
+					setIsEnd(true);
+					setIntervalAnimation(true);
+					setInterval(() => {
+						setIntervalAnimation((prev) => !prev);
+					}, 2000);
+				}
+			};
+
+			characterReductionAnimation();
 		};
 
 		const drawFrame = (canvasX, canvasY) => {
@@ -202,31 +259,102 @@ function App() {
 			});
 		};
 
+		/* 도라에몽 피격시 이펙트 효과 */
+		const drawHitEffect = (time) => {
+			const now = new Date().getTime();
+			const elapsed = now - time;
+			const alphaTime = 1000;
+
+			if (isSuccessRef.current) return;
+
+			if (elapsed < alphaTime) {
+				ctx.save();
+				const alpha = 0.1 * (1 - elapsed / alphaTime);
+				ctx.fillStyle = `rgba(255, 0, 0, ${alpha})`;
+				ctx.fillRect(0, 0, canvas.width, canvas.height);
+				ctx.restore();
+				hitEffectFrameId = requestAnimationFrame(() => drawHitEffect(time));
+			}
+		};
+
+		const drawHitMark = () => {
+			hitMarks = hitMarks.filter((mark) => {
+				const now = new Date().getTime();
+				const elapsed = now - mark.t;
+
+				if (elapsed < 1000) {
+					ctx.save();
+					ctx.font = "40px 'Sixtyfour Convergence', sans-serif";
+					ctx.textAlign = "center";
+					mark.y -= 1;
+					ctx.fillText("Hit", mark.x, mark.y);
+					ctx.restore();
+					return true;
+				}
+				return false;
+			});
+		};
+
 		const handleShoot = (e) => {
 			if (isCursorOverTarget(e)) {
-				if (level.current <= 1) {
-					level.current += 1;
+				if (levelRef.current <= 2) {
+					hitMarks.push({
+						x: e.clientX,
+						y: e.clientY,
+						t: new Date().getTime(),
+					});
+					hitCountRef.current++;
+					levelRef.current = ~~(hitCountRef.current / 35);
+					setLevelUp(~~(hitCountRef.current / 35));
+					miniMapCharSizeRef.current -= 0.17;
+
+					if (levelRef.current === 2) {
+						isSuccessRef.current = true;
+					}
+					scaleRef.current -= 0.01;
 					setRecalculation((prev) => !prev);
-				} else {
+					drawHitEffect(new Date().getTime());
 				}
-			} else
-				bulletMarks.push({
-					x: e.clientX,
-					y: e.clientY,
-					t: new Date().getTime(),
-					alpha: 1,
-					rotate: Math.random() * 2 * Math.PI,
-				});
+			}
+			bulletMarks.push({
+				x: e.clientX,
+				y: e.clientY,
+				t: new Date().getTime(),
+				rotate: Math.random() * 2 * Math.PI,
+			});
 		};
 
 		loadImages();
 
 		return () => {
 			window.removeEventListener("click", handleShoot);
-			if (intervalId) clearTimeout(intervalId);
+			if (timeoutId) clearTimeout(timeoutId);
 			if (animationFrameId) cancelAnimationFrame(animationFrameId);
+			if (hitEffectFrameId) cancelAnimationFrame(hitEffectFrameId);
+			if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
 		};
 	}, []);
+
+	useEffect(() => {
+		const speedUpText = speedUpTextRef.current;
+		let count = 0;
+		let id;
+		if (level && level < SPEED_LEVELS.length)
+			id = setInterval(() => {
+				if (count === 20) {
+					clearInterval(id);
+					speedUpText.style.visibility = "hidden";
+					return;
+				}
+				count++;
+				speedUpText.style.visibility =
+					speedUpText.style.visibility === "visible" ? "hidden" : "visible";
+			}, 200);
+
+		return () => {
+			if (id) clearInterval(id);
+		};
+	}, [level]);
 
 	useEffect(() => {
 		let offsetX = 0;
@@ -253,12 +381,18 @@ function App() {
 
 	return (
 		<>
+			<HPBar hitCountRef={hitCountRef} />
+			<div ref={speedUpTextRef} className="speed-up">
+				<div className="text">SPEED UP!</div>
+			</div>
 			<div className="circle" ref={circleRef}>
 				<div className="light" id="light"></div>
 				<div className={`col ${isCursorOver ? "active" : ""}`}></div>
 				<div className={`row ${isCursorOver ? "active" : ""}`}></div>
 			</div>
-			<canvas ref={canvasRef}></canvas>
+			{!isEnd && <canvas ref={canvasRef}></canvas>}
+			{!isEnd && <MiniMap posRef={posRef.current} miniMapCharSizeRef={miniMapCharSizeRef} />}
+			{isEnd && <GameClear intervalAnimation={intervalAnimation} />}
 		</>
 	);
 }

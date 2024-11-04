@@ -1,0 +1,10 @@
+.mini-map {
+	position: absolute;
+	background-color: rgb(36, 36, 36);
+	z-index: 1;
+	top: 10px;
+	right: 10px;
+	border-radius: 5px;
+	/* box-shadow: 0 0 10px 1px white; */
+	border: 2px solid white;
+}
