@@ -9,8 +9,7 @@ function App() {
 		width: Math.floor(980 / 4),
 		height: Math.floor(645 / 2) - 13,
 	};
-	const SPEED_LEVELS = [2.5, 7];
-	// const SPEED_LEVELS = [1, 1, 1];
+	const SPEED_LEVELS = [5, 14];
 
 	const INTERVAL_TIMES = [1500, 700, 300];
 	const LERP_TIMES = [0.01, 0.05];
@@ -103,6 +102,7 @@ function App() {
 		let animationFrameId;
 		let hitEffectFrameId;
 		let timeoutId;
+		let lastTime;
 
 		const loadImages = () => {
 			let imagesLoaded = 0;
@@ -144,38 +144,45 @@ function App() {
 				customInterval();
 			};
 
-			const drawCanvas = () => {
+			const drawCanvas = (timestamp) => {
 				if (!isSuccessRef.current) {
-					frameSpeed++;
-					if (frameSpeed > 10) {
-						currLoopIdx++;
-						if (currLoopIdx >= CYCLE_LOOP_X.length) currLoopIdx = 0;
-						frameSpeed = 0;
+					if (timestamp) {
+						if (!lastTime) lastTime = timestamp;
+						const diffTime = timestamp - lastTime;
+						const speedFactor = diffTime / (1000 / 60);
+
+						frameSpeed++;
+						if (frameSpeed > 10) {
+							currLoopIdx++;
+							if (currLoopIdx >= CYCLE_LOOP_X.length) currLoopIdx = 0;
+							frameSpeed = 0;
+						}
+						if (
+							posRef.current.x <= 0 ||
+							posRef.current.x + scaleWidth.current >= canvas.width ||
+							posRef.current.y <= 0 ||
+							posRef.current.y + scaleHeight.current >= canvas.height
+						) {
+							reverseDirection(
+								posRef.current.x <= 0 || posRef.current.x + scaleWidth.current >= canvas.width
+									? "x"
+									: "y"
+							);
+							updateDirection(true);
+						} else {
+							updateDirection();
+						}
+
+						posRef.current.x += dirRef.current.x * SPEED_LEVELS[levelRef.current] * speedFactor;
+						posRef.current.y += dirRef.current.y * SPEED_LEVELS[levelRef.current] * speedFactor;
+						// console.log(posRef);
+
+						ctx.clearRect(0, 0, document.body.clientWidth, document.body.clientHeight);
+						drawBulletMarks();
+						drawFrame(posRef.current.x, posRef.current.y);
+						drawHitMark();
+						lastTime = timestamp;
 					}
-					if (
-						posRef.current.x <= 0 ||
-						posRef.current.x + scaleWidth.current >= canvas.width ||
-						posRef.current.y <= 0 ||
-						posRef.current.y + scaleHeight.current >= canvas.height
-					) {
-						reverseDirection(
-							posRef.current.x <= 0 || posRef.current.x + scaleWidth.current >= canvas.width
-								? "x"
-								: "y"
-						);
-						updateDirection(true);
-					} else {
-						updateDirection();
-					}
-
-					posRef.current.x += dirRef.current.x * SPEED_LEVELS[levelRef.current];
-					posRef.current.y += dirRef.current.y * SPEED_LEVELS[levelRef.current];
-
-					ctx.clearRect(0, 0, document.body.clientWidth, document.body.clientHeight);
-					drawBulletMarks();
-					drawFrame(posRef.current.x, posRef.current.y);
-					drawHitMark();
-
 					animationFrameId = requestAnimationFrame(drawCanvas);
 				} else {
 					gameClear(posRef.current.x, posRef.current.y);
