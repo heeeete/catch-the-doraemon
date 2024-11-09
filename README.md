@@ -1,4 +1,4 @@
-### [🎮 게임하기](https://find-doraemon.vercel.app/)
+### [🎮 게임하기](https://catch-the-doraemon.vercel.app/)
 
 ### 도라에몽을 총으로 쏴 잡는 게임
 
