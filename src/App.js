@@ -14,6 +14,7 @@ function App() {
 	const INTERVAL_TIMES = [1500, 700, 300];
 	const LERP_TIMES = [0.01, 0.05];
 
+	const [isStart, setIsStart] = useState(false);
 	const [isCursorOver, setIsCursorOver] = useState(false);
 	const [recalculation, setRecalculation] = useState(false);
 	const [isEnd, setIsEnd] = useState(false);
@@ -23,7 +24,7 @@ function App() {
 	const levelRef = useRef(0);
 	const scaleRef = useRef(1);
 	const speedUpTextRef = useRef(null);
-	const miniMapCharSizeRef = useRef(17);
+	const doraemonSizeInMiniMapRef = useRef(17);
 	const isSuccessRef = useRef(false);
 	const hitCountRef = useRef(0);
 	const canvasRef = useRef(null);
@@ -175,7 +176,6 @@ function App() {
 
 						posRef.current.x += dirRef.current.x * SPEED_LEVELS[levelRef.current] * speedFactor;
 						posRef.current.y += dirRef.current.y * SPEED_LEVELS[levelRef.current] * speedFactor;
-						// console.log(posRef);
 
 						ctx.clearRect(0, 0, document.body.clientWidth, document.body.clientHeight);
 						drawBulletMarks();
@@ -303,7 +303,7 @@ function App() {
 		};
 
 		const handleShoot = (e) => {
-			if (isCursorOverTarget(e)) {
+			if (isStart && isCursorOverTarget(e)) {
 				if (levelRef.current <= 2) {
 					hitMarks.push({
 						x: e.clientX,
@@ -313,7 +313,7 @@ function App() {
 					hitCountRef.current++;
 					levelRef.current = ~~(hitCountRef.current / 35);
 					setLevelUp(~~(hitCountRef.current / 35));
-					miniMapCharSizeRef.current -= 0.17;
+					doraemonSizeInMiniMapRef.current -= 0.17;
 
 					if (levelRef.current === 2) {
 						isSuccessRef.current = true;
@@ -340,7 +340,7 @@ function App() {
 			if (hitEffectFrameId) cancelAnimationFrame(hitEffectFrameId);
 			if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
 		};
-	}, []);
+	}, [isStart]);
 
 	useEffect(() => {
 		const speedUpText = speedUpTextRef.current;
@@ -388,7 +388,7 @@ function App() {
 
 	return (
 		<>
-			<HPBar hitCountRef={hitCountRef} />
+			{isStart && <HPBar hitCountRef={hitCountRef} />}
 			<div ref={speedUpTextRef} className="speed-up">
 				<div className="text">SPEED UP!</div>
 			</div>
@@ -398,8 +398,21 @@ function App() {
 				<div className={`row ${isCursorOver ? "active" : ""}`}></div>
 			</div>
 			{!isEnd && <canvas ref={canvasRef}></canvas>}
-			{!isEnd && <MiniMap posRef={posRef.current} miniMapCharSizeRef={miniMapCharSizeRef} />}
+			{isStart && !isEnd && (
+				<MiniMap posRef={posRef.current} doraemonSizeInMiniMapRef={doraemonSizeInMiniMapRef} />
+			)}
 			{isEnd && <GameClear intervalAnimation={intervalAnimation} />}
+			{!isStart && (
+				<div className="before-start">
+					<span className="">🔎 Catch the doraemon 🔫</span>
+					<span className="">
+						The game is about shooting with the left mouse button to catch Doraemon
+					</span>
+					<span className="notice">* Mouse usage is recommended</span>
+					<span className="notice">* Chrome and Firefox browsers are recommended</span>
+					<button onClick={() => setIsStart(true)}>START</button>
+				</div>
+			)}
 		</>
 	);
 }

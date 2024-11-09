@@ -1,7 +1,7 @@
 import { useRef, useEffect } from "react";
-import "./miniMap.css";
+import "./miniMap.scss";
 
-export default function MiniMap({ posRef, miniMapCharSizeRef }) {
+export default function MiniMap({ posRef, doraemonSizeInMiniMapRef }) {
 	const canvasRef = useRef(null);
 	const img = useRef(new Image());
 
@@ -19,7 +19,7 @@ export default function MiniMap({ posRef, miniMapCharSizeRef }) {
 
 			const PosX = posRef.x / 7;
 			const PosY = posRef.y / 7;
-			const size = miniMapCharSizeRef.current;
+			const size = doraemonSizeInMiniMapRef.current;
 
 			// 얼굴
 			ctx.beginPath();
@@ -29,7 +29,7 @@ export default function MiniMap({ posRef, miniMapCharSizeRef }) {
 
 			// 흰색 수염
 			ctx.beginPath();
-			ctx.ellipse(size + PosX, size + size * 0.3 + PosY, size * 0.8, size * 0.6, 0, 0, Math.PI * 2);
+			ctx.ellipse(size + PosX, size + size * 0.2 + PosY, size * 0.9, size * 0.7, 0, 0, Math.PI * 2);
 			ctx.fillStyle = "white";
 			ctx.fill();
 
@@ -38,14 +38,15 @@ export default function MiniMap({ posRef, miniMapCharSizeRef }) {
 			~ 3 윗 수염
 			~ 아랫 수염
 			*/
-			ctx.lineWidth = 0.2;
+			// ctx.lineWidth = size * 0.01;
+			ctx.lineWidth = size * 0.01;
 			const beards = [
-				[size * 0.9 + PosX, size * 1.3 + PosY, size + PosX - size, size * 1.3 + PosY],
-				[size * 1.2 + PosX, size * 1.3 + PosY, size + PosX + size, size * 1.3 + PosY],
-				[size * 0.9 + PosX, size * 1.2 + PosY, size + PosX - size, size + PosY],
-				[size * 1.2 + PosX, size * 1.2 + PosY, size + PosX + size, size + PosY],
-				[size * 0.9 + PosX, size * 1.4 + PosY, size + PosX - size, size * 1.6 + PosY],
-				[size * 1.2 + PosX, size * 1.4 + PosY, size + PosX + size, size * 1.6 + PosY],
+				[size * 0.6 + PosX, size * 1.2 + PosY, size + PosX - size, size * 1.2 + PosY],
+				[size * 1.4 + PosX, size * 1.2 + PosY, size + PosX + size, size * 1.2 + PosY],
+				[size * 0.6 + PosX, size * 1.1 + PosY, size + PosX - size * 0.95, size + PosY],
+				[size * 1.4 + PosX, size * 1.1 + PosY, size + PosX + size * 0.95, size + PosY],
+				[size * 0.6 + PosX, size * 1.3 + PosY, size + PosX - size * 0.95, size * 1.4 + PosY],
+				[size * 1.4 + PosX, size * 1.3 + PosY, size + PosX + size * 0.95, size * 1.4 + PosY],
 			];
 
 			for (const beard of beards) {
@@ -57,12 +58,20 @@ export default function MiniMap({ posRef, miniMapCharSizeRef }) {
 
 			// 왼쪽 눈 -> 눈동자 -> 반사광 -> 오른쪽 ... 순
 			const eyes = [
-				[size * 0.8 + PosX, size * 0.8 + PosY, size / 4, size / 3],
-				[size * 0.8 + size / 8 + PosX, size * 0.8 + PosY, size / 10, size / 8],
-				[size * 0.8 + size / 8 + PosX, size * 0.8 + PosY, size / 20, size / 18, 0, 0, Math.PI * 2],
-				[size * 0.8 + size / 2 + PosX, size * 0.8 + PosY, size / 4, size / 3],
-				[size * 0.8 + size / 2.5 + PosX, size * 0.8 + PosY, size / 10, size / 8, 0, 0, Math.PI * 2],
-				[size * 0.8 + size / 2.5 + PosX, size * 0.8 + PosY, size / 20, size / 18],
+				[size * 0.75 + PosX, size * 0.5 + PosY, size / 4, size / 3],
+				[size * 0.75 + size / 8 + PosX, size * 0.5 + PosY, size / 10, size / 8],
+				[size * 0.75 + size / 8 + PosX, size * 0.5 + PosY, size / 20, size / 18, 0, 0, Math.PI * 2],
+				[size * 0.75 + size / 2 + PosX, size * 0.5 + PosY, size / 4, size / 3],
+				[
+					size * 0.75 + size / 2.5 + PosX,
+					size * 0.5 + PosY,
+					size / 10,
+					size / 8,
+					0,
+					0,
+					Math.PI * 2,
+				],
+				[size * 0.75 + size / 2.5 + PosX, size * 0.5 + PosY, size / 20, size / 18],
 			];
 
 			eyes.forEach((eye, idx) => {
@@ -75,13 +84,13 @@ export default function MiniMap({ posRef, miniMapCharSizeRef }) {
 
 			// 코
 			ctx.beginPath();
-			ctx.arc(size + PosX, size * 1.3 + PosY, size * 0.2, 0, Math.PI * 2);
+			ctx.arc(size + PosX, size * 0.95 + PosY, size * 0.2, 0, Math.PI * 2);
 			ctx.fillStyle = "red";
 			ctx.fill();
 
 			// 코 (반사광)
 			ctx.beginPath();
-			ctx.arc(size * 1.1 + PosX, size * 1.28 + PosY, size * 0.07, 0, Math.PI * 2);
+			ctx.arc(size * 1.1 + PosX, size * 0.9 + PosY, size * 0.07, 0, Math.PI * 2);
 			ctx.fillStyle = "white";
 			ctx.fill();
 		};

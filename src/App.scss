@@ -64,3 +64,45 @@ $active-color: red;
 		transition: 1s;
 	}
 }
+
+.before-start {
+	font-family: "Sixtyfour Convergence";
+	position: fixed;
+	top: 0;
+	left: 0;
+	display: flex;
+	flex-direction: column;
+	width: 100dvw;
+	height: 100dvh;
+	justify-content: center;
+	align-items: center;
+
+	> * {
+		margin-bottom: 3vh;
+	}
+
+	span {
+		text-align: center;
+		z-index: 100;
+	}
+
+	.notice {
+		font-size: small;
+		z-index: 100;
+	}
+
+	button {
+		background-color: transparent;
+		border: 1px solid rgb(162, 162, 162);
+		padding: 10px 30px;
+		border-radius: 5px;
+		color: rgb(162, 162, 162);
+		transition: 0.2s;
+
+		&:hover {
+			box-shadow: 0 0 10px black;
+			color: black;
+			font-weight: 900;
+		}
+	}
+}
