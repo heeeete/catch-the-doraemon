@@ -12,7 +12,7 @@ function App() {
 	const SPEED_LEVELS = [5, 14];
 
 	const INTERVAL_TIMES = [1500, 700, 300];
-	const LERP_TIMES = [0.01, 0.05];
+	const TURN_SPEED = [0.01, 0.05];
 
 	const [isStart, setIsStart] = useState(false);
 	const [isCursorOver, setIsCursorOver] = useState(false);
@@ -53,10 +53,10 @@ function App() {
 
 	/* 도라에몽 방향 점진적 업데이트 */
 	const updateDirection = (immediate = false) => {
-		const lerpTime = immediate ? 1 : LERP_TIMES[levelRef.current];
+		const turnSpeed = immediate ? 1 : TURN_SPEED[levelRef.current];
 
-		dirRef.current.x += (targetDirRef.current.x - dirRef.current.x) * lerpTime;
-		dirRef.current.y += (targetDirRef.current.y - dirRef.current.y) * lerpTime;
+		dirRef.current.x += (targetDirRef.current.x - dirRef.current.x) * turnSpeed;
+		dirRef.current.y += (targetDirRef.current.y - dirRef.current.y) * turnSpeed;
 		normalizeDir();
 	};
 
