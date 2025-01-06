@@ -3,16 +3,10 @@ import "./miniMap.scss";
 
 export default function MiniMap({ posRef, doraemonSizeInMiniMapRef }) {
 	const canvasRef = useRef(null);
-	const img = useRef(new Image());
 
 	useEffect(() => {
 		const canvas = canvasRef.current;
 		const ctx = canvas.getContext("2d");
-
-		img.current.src = "/smallDo.png";
-		img.current.onload = () => {
-			requestAnimationFrame(init);
-		};
 
 		const drawCanvas = () => {
 			ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -99,6 +93,8 @@ export default function MiniMap({ posRef, doraemonSizeInMiniMapRef }) {
 			drawCanvas();
 			requestAnimationFrame(init);
 		};
+
+		requestAnimationFrame(init);
 	}, []);
 
 	useEffect(() => {
