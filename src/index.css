@@ -4,6 +4,11 @@
 	-webkit-user-drag: none;
 }
 
+.light-toggle, 
+.before-start button {
+	cursor: pointer !important;
+}
+
 body {
 	margin: 0;
 	padding: 0;

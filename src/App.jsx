@@ -20,6 +20,7 @@ function App() {
 	const [isEnd, setIsEnd] = useState(false);
 	const [level, setLevelUp] = useState(0);
 	const [intervalAnimation, setIntervalAnimation] = useState(false);
+	const [isLightOn, setIsLightOn] = useState(false);
 
 	const levelRef = useRef(0);
 	const scaleRef = useRef(1);
@@ -393,7 +394,7 @@ function App() {
 				<div className="text">SPEED UP!</div>
 			</div>
 			<div className="circle" ref={circleRef}>
-				<div className="light" id="light"></div>
+				<div className={`light ${isLightOn ? "on" : ""}`} id="light"></div>
 				<div className={`col ${isCursorOver ? "active" : ""}`}></div>
 				<div className={`row ${isCursorOver ? "active" : ""}`}></div>
 			</div>
@@ -402,6 +403,9 @@ function App() {
 				<MiniMap posRef={posRef.current} doraemonSizeInMiniMapRef={doraemonSizeInMiniMapRef} />
 			)}
 			{isEnd && <GameClear intervalAnimation={intervalAnimation} />}
+			<div className="light-toggle" onClick={() => setIsLightOn(!isLightOn)}>
+				{isLightOn ? "💡 조명 끄기" : "🌑 조명 켜기"}
+			</div>
 			{!isStart && (
 				<div className="before-start">
 					<span className="">🔎 Catch the doraemon 🔫</span>

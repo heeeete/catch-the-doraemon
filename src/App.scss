@@ -64,6 +64,34 @@ $active-color: red;
 		filter: blur(20px);
 		box-shadow: 0 0 0 9999px black;
 		transition: 1s;
+
+		&.on {
+			box-shadow: 0 0 0 9999px transparent;
+		}
+	}
+}
+
+.light-toggle {
+	position: fixed;
+	bottom: 20px;
+	right: 20px;
+	padding: 10px 15px;
+	background-color: rgba(255, 255, 255, 0.2);
+	color: white;
+	border-radius: 20px;
+	cursor: pointer;
+	z-index: 1000;
+	font-family: "Chakra Petch", sans-serif;
+	font-size: 14px;
+	backdrop-filter: blur(5px);
+	border: 1px solid rgba(255, 255, 255, 0.3);
+	transition: 0.3s;
+	user-select: none;
+	pointer-events: auto; /* 중요: 부모가 pointer-events: none일 경우 대비 */
+
+	&:hover {
+		background-color: rgba(255, 255, 255, 0.4);
+		transform: translateY(-2px);
 	}
 }
 
