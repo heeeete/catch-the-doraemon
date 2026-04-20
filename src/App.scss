@@ -27,6 +27,8 @@ $active-color: red;
 	width: $circle-size;
 	height: $circle-size;
 	z-index: 0;
+	pointer-events: none;
+	user-select: none;
 
 	.col,
 	.row {
