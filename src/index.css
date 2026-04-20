@@ -1,5 +1,7 @@
 * {
 	cursor: none !important;
+	user-select: none;
+	-webkit-user-drag: none;
 }
 
 body {
@@ -8,4 +10,5 @@ body {
 	height: 100dvh;
 	width: 100dvw;
 	overflow: hidden;
+	touch-action: none;
 }
